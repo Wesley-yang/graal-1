@@ -225,7 +225,6 @@ public final class YoungGeneration extends Generation {
         }
 
         assert ObjectHeaderImpl.isAlignedObject(original);
-        assert originalSpace.isEdenSpace() || originalSpace.isSurvivorSpace() : "Should be Eden or survivor.";
         assert originalSpace.getAge() < maxSurvivorSpaces;
 
         int age = originalSpace.getNextAgeForPromotion();
@@ -246,5 +245,20 @@ public final class YoungGeneration extends Generation {
         Space toSpace = getSurvivorToSpaceAt(age - 1);
         toSpace.promoteUnalignedHeapChunk(originalChunk, originalSpace);
         return original;
+    }
+
+    @Override
+    protected void promoteChunk(HeapChunk.Header<?> originalChunk, boolean isAligned, Space originalSpace) {
+        if (!originalSpace.isFromSpace()) {
+            return;
+        }
+        assert originalSpace.getAge() < maxSurvivorSpaces;
+        int age = originalSpace.getNextAgeForPromotion();
+        Space toSpace = getSurvivorToSpaceAt(age - 1);
+        if (isAligned) {
+            toSpace.promoteAlignedHeapChunk((AlignedHeapChunk.AlignedHeader) originalChunk, originalSpace);
+        } else {
+            toSpace.promoteUnalignedHeapChunk((UnalignedHeapChunk.UnalignedHeader) originalChunk, originalSpace);
+        }
     }
 }
